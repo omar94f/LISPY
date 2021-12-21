@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "mpc.h"
 
 // __APPLE__ for mac
 #ifdef _WIN32
