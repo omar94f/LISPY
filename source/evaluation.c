@@ -28,6 +28,32 @@ void add_history(char *unused) {}
 
 #endif
 
+long eval_op(char *op, long oper1, long oper2) {
+    if(strcmp(op, "+")) { return oper1 + oper2; }
+    if(strcmp(op, "*")) { return oper1 * oper2; }
+    if(strcmp(op, "-")) { return oper1 - oper2; }
+    if(strcmp(op, "/")) { return oper1 / oper2; }
+    return 0;
+}
+
+long eval(mpc_ast_t *t) {
+    if(strstr(t->tag, "number")) {
+        return atoi(t->contents);
+    }
+
+    char *op = t->children[1]->contents;
+
+    long x = eval(t->children[2]);
+
+    int i=3;
+    
+    while(strstr(t->children[i]->tag, "expr")) {
+        x = eval_op(op, x, eval(t->children[i]));
+        i++;
+    }
+
+    return  x;
+}
 
 int main(int arc, char** argv) {
     /* create some parsers */
@@ -58,6 +84,7 @@ int main(int arc, char** argv) {
         mpc_result_t r;
         if(mpc_parse("<stdin>", input, Lispy, &r)){
             mpc_ast_print(r.output);
+            printf("Evaluation: %li\n", eval(r.output));
             mpc_ast_delete(r.output);
         } else {
             mpc_err_print(r.error);
