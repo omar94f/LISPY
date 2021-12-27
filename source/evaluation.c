@@ -28,22 +28,88 @@ void add_history(char *unused) {}
 
 #endif
 
-long eval_op(char *op, long oper1, long oper2) {
-    if(strcmp(op, "+") == 0) { return oper1 + oper2; }
-    if(strcmp(op, "*") == 0) { return oper1 * oper2; }
-    if(strcmp(op, "-") == 0) { return oper1 - oper2; }
-    if(strcmp(op, "/") == 0) { return oper1 / oper2; }
-    return 0;
+// ----------------------------------------
+
+typedef struct 
+{
+    int type;
+    double num;
+    int err;
+} lval;
+
+enum LvalType { LVAL_NUM, LVAL_ERR };
+
+enum LvalError { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
+
+lval create_lval_num(long x) {
+    lval v;
+    v.type = LVAL_NUM;
+    v.num = x;
+    return v;
 }
 
-long eval(mpc_ast_t *t) {
+lval create_lval_err(int x) {
+    lval v;
+    v.type = LVAL_ERR;
+    v.err = x;
+    return v;
+}
+
+void lval_print(lval v) {
+
+    switch (v.type)
+    {
+    case LVAL_NUM:
+        printf("%f", v.num);
+        break;
+    case LVAL_ERR:
+        if(v.err == LERR_DIV_ZERO) {
+            printf("Error: Cannot divide by zero");
+        }
+        if(v.err == LERR_BAD_OP) {
+            printf("Error: invalid operator");
+        }
+        if(v.err == LERR_BAD_NUM) {
+            printf("Error: invalid number");
+        }
+        break;
+    default:
+        break;
+    }
+
+}
+
+void lval_println(lval v) { 
+    lval_print(v); 
+    putchar('\n');
+}
+
+lval eval_op(char *op, lval oper1, lval oper2) {
+    if(oper1.type == LVAL_ERR) { return oper1; }
+    if(oper2.type == LVAL_ERR) { return oper2; }
+
+    if(strcmp(op, "+") == 0) { return create_lval_num(oper1.num + oper2.num); }
+    if(strcmp(op, "*") == 0) { return create_lval_num(oper1.num * oper2.num); }
+    if(strcmp(op, "-") == 0) { return create_lval_num(oper1.num - oper2.num); }
+    if(strcmp(op, "/") == 0) { 
+        return oper2.num == 0 ? 
+        create_lval_err(LERR_DIV_ZERO) : 
+        create_lval_num(oper1.num / oper2.num); 
+        }
+    return create_lval_err(LERR_BAD_OP);
+}
+
+lval eval(mpc_ast_t *t) {
     if(strstr(t->tag, "number")) {
-        return atoi(t->contents);
+        errno = 0;
+        long x = strtol(t->contents, NULL, 10);
+
+        return errno != ERANGE ? create_lval_num(x) : create_lval_err(LERR_BAD_NUM);
     }
 
     char *op = t->children[1]->contents;
 
-    long x = eval(t->children[2]);
+    lval x = eval(t->children[2]);
 
     int i=3;
     
@@ -98,7 +164,8 @@ int main(int arc, char** argv) {
         mpc_result_t r;
         if(mpc_parse("<stdin>", input, Lispy, &r)){
             mpc_ast_print(r.output);
-            printf("Evaluation: %li\n", eval(r.output));
+            lval result = eval(r.output);
+            lval_println(result);
             printf("Leaves: %i\n", countLeaves(r.output));
             mpc_ast_delete(r.output);
         } else {
