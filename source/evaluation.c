@@ -29,10 +29,10 @@ void add_history(char *unused) {}
 #endif
 
 long eval_op(char *op, long oper1, long oper2) {
-    if(strcmp(op, "+")) { return oper1 + oper2; }
-    if(strcmp(op, "*")) { return oper1 * oper2; }
-    if(strcmp(op, "-")) { return oper1 - oper2; }
-    if(strcmp(op, "/")) { return oper1 / oper2; }
+    if(strcmp(op, "+") == 0) { return oper1 + oper2; }
+    if(strcmp(op, "*") == 0) { return oper1 * oper2; }
+    if(strcmp(op, "-") == 0) { return oper1 - oper2; }
+    if(strcmp(op, "/") == 0) { return oper1 / oper2; }
     return 0;
 }
 
@@ -53,6 +53,20 @@ long eval(mpc_ast_t *t) {
     }
 
     return  x;
+}
+
+int countLeaves(mpc_ast_t *t) {
+    if(strstr( t->tag, "operator") || strstr(t->tag, "number") || strstr(t->tag, "char")){
+        return 1;
+    }
+    
+    int x = 0;
+    int i = 0;
+    while(i < t->children_num){
+        x = x + countLeaves(t->children[i]);
+        i++;
+    }
+    return x; 
 }
 
 int main(int arc, char** argv) {
@@ -85,6 +99,7 @@ int main(int arc, char** argv) {
         if(mpc_parse("<stdin>", input, Lispy, &r)){
             mpc_ast_print(r.output);
             printf("Evaluation: %li\n", eval(r.output));
+            printf("Leaves: %i\n", countLeaves(r.output));
             mpc_ast_delete(r.output);
         } else {
             mpc_err_print(r.error);
