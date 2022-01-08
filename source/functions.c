@@ -397,7 +397,7 @@ void lval_println(lval *v) {
 lval* pop(lval *v, int i) {
     lval *x = v->cell[i];
 
-    memmove(&v->cell[i], &v->cell[i+1], sizeof(lval*) * v->cell_count-1-i);
+    memmove(&v->cell[i], &v->cell[i+1], sizeof(lval*) * (v->cell_count-1-i));
     v->cell_count--;
     v->cell = realloc(v->cell, sizeof(lval*) * v->cell_count);
 
